@@ -1,0 +1,56 @@
+blueprint:
+  name: Holiday Mode – Lighting (Occupancy Simulation)
+  description: >
+    Turns living room lights on at sunset and randomly toggles
+    selected lights while Holiday Mode is active.
+  domain: automation
+
+  input:
+    holiday_mode:
+      name: Holiday Mode Switch
+      selector:
+        entity:
+          domain: input_boolean
+
+    living_room_lights:
+      name: Living Room Lights
+      selector:
+        entity:
+          domain: light
+
+    random_lights:
+      name: Random Lights (Kitchen / Toilet)
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+mode: restart
+
+trigger:
+  - platform: sun
+    event: sunset
+
+  - platform: time_pattern
+    minutes: "/15"
+
+condition:
+  - condition: state
+    entity_id: !input holiday_mode
+    state: "on"
+
+action:
+  - choose:
+      - conditions:
+          - condition: sun
+            after: sunset
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input living_room_lights
+
+      - conditions: "{{ range(0,10) | random > 6 }}"
+        sequence:
+          - service: light.toggle
+            target:
+              entity_id: !input random_lights
