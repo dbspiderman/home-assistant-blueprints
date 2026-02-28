@@ -1,8 +1,10 @@
 blueprint:
-  name: Holiday Mode – Core (Multi-Entity)
+  name: Holiday Mode – Core (Multi-Entity + Auto-Rearm)
   description: >
     Arms/disarms alarm, sets multiple thermostats to frost protection,
-    and enables/disables multiple Frigate motion & recording switches.
+    enables/disables multiple Frigate switches, and automatically
+    re-arms everything after a Home Assistant restart or power outage
+    if Holiday Mode is still active.
   domain: automation
 
   input:
@@ -51,13 +53,21 @@ blueprint:
 mode: single
 
 trigger:
+  # Holiday mode toggled
   - platform: state
     entity_id: !input holiday_mode
 
+  # 🔌 Home Assistant restarted (power outage recovery)
+  - platform: homeassistant
+    event: start
+
 action:
+  # ⏳ Give integrations time to reconnect
+  - delay: "00:01:00"
+
   - choose:
 
-      # ───── Holiday Mode ON ─────
+      # ───── Holiday Mode ON (normal OR after restart) ─────
       - conditions:
           - condition: state
             entity_id: !input holiday_mode
