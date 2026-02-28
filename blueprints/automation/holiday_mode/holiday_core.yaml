@@ -1,8 +1,8 @@
 blueprint:
-  name: Holiday Mode – Core (Alarm, Heating, Cameras)
+  name: Holiday Mode – Core (Multi-Entity)
   description: >
-    Arms/disarms alarm, sets heating to frost protection,
-    and enables/disables Frigate recording & motion.
+    Arms/disarms alarm, sets multiple thermostats to frost protection,
+    and enables/disables multiple Frigate motion & recording switches.
   domain: automation
 
   input:
@@ -18,11 +18,12 @@ blueprint:
         entity:
           domain: alarm_control_panel
 
-    climate_entity:
-      name: Thermostat
+    climate_entities:
+      name: Thermostats (one or more)
       selector:
         entity:
           domain: climate
+          multiple: true
 
     frost_temp:
       name: Frost Protection Temperature
@@ -33,17 +34,19 @@ blueprint:
           max: 10
           unit_of_measurement: "°C"
 
-    frigate_motion_switch:
-      name: Frigate Motion Switch
+    frigate_motion_switches:
+      name: Frigate Motion Switches (one or more)
       selector:
         entity:
           domain: switch
+          multiple: true
 
-    frigate_record_switch:
-      name: Frigate Recording Switch
+    frigate_record_switches:
+      name: Frigate Recording Switches (one or more)
       selector:
         entity:
           domain: switch
+          multiple: true
 
 mode: single
 
@@ -53,44 +56,53 @@ trigger:
 
 action:
   - choose:
+
+      # ───── Holiday Mode ON ─────
       - conditions:
           - condition: state
             entity_id: !input holiday_mode
             state: "on"
         sequence:
+
           - service: alarm_control_panel.alarm_arm_away
             target:
               entity_id: !input alarm_panel
 
           - service: climate.set_temperature
             target:
-              entity_id: !input climate_entity
+              entity_id: !input climate_entities
             data:
               temperature: !input frost_temp
 
           - service: switch.turn_on
             target:
-              entity_id:
-                - !input frigate_motion_switch
-                - !input frigate_record_switch
+              entity_id: !input frigate_motion_switches
 
+          - service: switch.turn_on
+            target:
+              entity_id: !input frigate_record_switches
+
+      # ───── Holiday Mode OFF ─────
       - conditions:
           - condition: state
             entity_id: !input holiday_mode
             state: "off"
         sequence:
+
           - service: alarm_control_panel.alarm_disarm
             target:
               entity_id: !input alarm_panel
 
           - service: climate.set_hvac_mode
             target:
-              entity_id: !input climate_entity
+              entity_id: !input climate_entities
             data:
               hvac_mode: auto
 
           - service: switch.turn_off
             target:
-              entity_id:
-                - !input frigate_motion_switch
-                - !input frigate_record_switch
+              entity_id: !input frigate_motion_switches
+
+          - service: switch.turn_off
+            target:
+              entity_id: !input frigate_record_switches
