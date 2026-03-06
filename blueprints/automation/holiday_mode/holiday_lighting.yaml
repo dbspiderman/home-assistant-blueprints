@@ -82,14 +82,19 @@ action:
       # Random lights during night
       - conditions: []
         sequence:
+- variables:
+    lights: !input random_lights
+    min_lights: !input min_random
+    max_lights: !input max_random
 
-          - variables:
-              lights: !input random_lights
-              count: "{{ range(!input min_random, !input max_random + 1) | random }}"
+- variables:
+    count: "{{ range(min_lights, max_lights + 1) | random }}"
 
-          - repeat:
-              count: "{{ count }}"
-              sequence:
-                - service: light.toggle
-                  target:
-                    entity_id: "{{ lights | random }}"
+- repeat:
+    count: "{{ count }}"
+    sequence:
+      - service: light.toggle
+        target:
+          entity_id: "{{ lights | random }}"
+
+
