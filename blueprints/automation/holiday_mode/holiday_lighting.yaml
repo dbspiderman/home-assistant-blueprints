@@ -1,8 +1,6 @@
 blueprint:
   name: Holiday Mode – Night Lighting Simulation
-  description: >
-    Turns evening lights on at sunset and randomly toggles selected lights
-    during the night while Holiday Mode is active.
+  description: Random lighting at night when holiday mode is active
   domain: automation
 
   input:
@@ -13,14 +11,14 @@ blueprint:
           domain: input_boolean
 
     evening_lights:
-      name: Evening Lights (Living Room etc)
+      name: Evening Lights
       selector:
         entity:
           domain: light
           multiple: true
 
     random_lights:
-      name: Lights for Random Simulation
+      name: Random Lights
       selector:
         entity:
           domain: light
@@ -45,32 +43,27 @@ blueprint:
 mode: restart
 
 trigger:
-
-  # sunset event
   - platform: sun
     event: sunset
+    id: sunset
 
-  # random cycles
   - platform: time_pattern
     minutes: "/10"
+    id: random
 
 condition:
-
-  # Holiday mode must be on
   - condition: state
     entity_id: !input holiday_mode
     state: "on"
 
-  # 🌙 Only run at night
   - condition: sun
     after: sunset
     before: sunrise
 
 action:
-
   - choose:
 
-      # Turn evening lights on at sunset
+      # Evening lights
       - conditions:
           - condition: trigger
             id: sunset
@@ -79,22 +72,22 @@ action:
             target:
               entity_id: !input evening_lights
 
-      # Random lights during night
-      - conditions: []
+      # Random lighting
+      - conditions:
+          - condition: trigger
+            id: random
         sequence:
-- variables:
-    lights: !input random_lights
-    min_lights: !input min_random
-    max_lights: !input max_random
+          - variables:
+              lights: !input random_lights
+              min_lights: !input min_random
+              max_lights: !input max_random
 
-- variables:
-    count: "{{ range(min_lights, max_lights + 1) | random }}"
+          - variables:
+              count: "{{ range(min_lights, max_lights + 1) | random }}"
 
-- repeat:
-    count: "{{ count }}"
-    sequence:
-      - service: light.toggle
-        target:
-          entity_id: "{{ lights | random }}"
-
-
+          - repeat:
+              count: "{{ count }}"
+              sequence:
+                - service: light.toggle
+                  target:
+                    entity_id: "{{ lights | random }}"
